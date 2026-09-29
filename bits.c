@@ -50,7 +50,12 @@ int bitXor(int x, int y) {
  *   1 if x and y have the same sign , 0 otherwise.
  */
 int samesign(int x, int y) {
-    return 2;
+    if((x & (1 << 31)) ^ (y & (1<<31))) return 0;
+    if(!(x && y)){
+        if(x ^ y) return 0;
+        else return 1;
+    }
+    return 1;
 }
 
 /*
@@ -63,7 +68,17 @@ int samesign(int x, int y) {
  *   Difficulty: 4
  */
 int logtwo(int v) {
-    return 2;
+    int a = ((v >> 16) > 0) << 4;
+    v = v >> a;
+    int b = ((v >> 8) > 0) << 3;
+    v = v >> b;
+    int c = ((v >> 4) > 0) << 2;
+    v = v >> c;
+    int d = ((v >> 2) > 0) << 1;
+    v = v >> d;
+    int e = (v >> 1) > 0; 
+
+    return a | b | c | d | e;
 }
 
 /*
@@ -76,7 +91,13 @@ int logtwo(int v) {
  *    Difficulty: 2
  */
 int byteSwap(int x, int n, int m) {
-    return 2;
+    int mov1 = n << 3;
+    int mov2 = m << 3;
+    int get1 = ((x >> mov1) & 0xFF) << mov2;
+    int get2 = ((x >> mov2) & 0xFF) << mov1;
+    x = x & (~((0xFF << mov1) | (0xFF << mov2)));
+    x = x | get1 | get2;
+    return x;
 }
 
 /*
@@ -88,7 +109,16 @@ int byteSwap(int x, int n, int m) {
  *   Difficulty: 3
  */
 unsigned reverse(unsigned v) {
-    return 2;
+    int n = 16;
+    while(n){
+        int i = 16 - n;
+        int headidx = 31 - i;
+        int num1 = ((v >> headidx) & 1) << i;
+        int num2 = ((v >> i) & 1) << headidx;
+        v = ((~((1 << headidx) | (1 << i))) & v) | num1 | num2;
+        n = n - 1;
+    }
+    return v;
 }
 
 /*
@@ -100,7 +130,9 @@ unsigned reverse(unsigned v) {
  *   Difficulty: 3
  */
 int logicalShift(int x, int n) {
-    return 2;
+    int mask = ~(((1 << 31) >> n) << 1);
+    x = (x >> n) & mask;
+    return x;
 }
 
 /*
@@ -112,7 +144,21 @@ int logicalShift(int x, int n) {
  *   Difficulty: 4
  */
 int leftBitCount(int x) {
-    return 2;
+    int v = ~x;
+
+    int a = (!!(v >> 16)) << 4;
+    v = v >> a;
+    int b = (!!(v >> 8)) << 3;
+    v = v >> b;
+    int c = (!!(v >> 4)) << 2;
+    v = v >> c;
+    int d = (!!(v >> 2)) << 1;
+    v = v >> d;
+    int e = !!(v >> 1); 
+    v = v >> e;
+
+    int n = 32 + (~(a + b + c + d + e + v) + 1);
+    return n & (x >> 31);
 }
 
 /*
@@ -124,7 +170,30 @@ int leftBitCount(int x) {
  *   Difficulty: 4
  */
 unsigned float_i2f(int x) {
-    return 2;
+    int mask = 1 << 31;
+    int fuhao = x & mask;
+    int n = 0;
+    int drop;
+    int weishu;
+    int jiema;
+    if (!x) return 0;
+    if (x < 0) x = -x;
+    while (!(x & mask)){
+        x = x << 1;
+        n = n + 1;
+    }
+    drop = x & 0xFF;
+    weishu = (x >> 8) & ((1 << 23) - 1);
+    if (drop > 128){
+        weishu = weishu + 1;
+    } 
+    else if(drop == 128){
+        if(weishu & 1){
+            weishu = weishu + 1;
+        }
+    }
+    jiema = 158 - n;
+    return fuhao | ((jiema << 23) + weishu);
 }
 
 /*
@@ -139,7 +208,13 @@ unsigned float_i2f(int x) {
  *   Difficulty: 4
  */
 unsigned floatScale2(unsigned uf) {
-    return 2;
+    int mask = 0xFF;
+    int jiema = ((uf >> 23) & 0xFF) + 1;
+    int fuhao = uf & (1 << 31);
+    if(jiema == 256) return uf;
+    if(jiema == 1) return fuhao | (uf << 1);
+    if(jiema == 255) return fuhao | (255 << 23);
+    return (uf & ~(mask << 23)) | (jiema << 23);
 }
 
 /*
@@ -156,7 +231,14 @@ unsigned floatScale2(unsigned uf) {
  *   Difficulty: 3
  */
 int float64_f2i(unsigned uf1, unsigned uf2) {
-    return 2;
+    int fuhao = uf2 & (1 << 31); //yuanwei
+    int jiema = (uf2 >> 20) & (((1 << 11) - 1)); //feiyuanwei
+    if(jiema >= 1054) return 1 << 31;
+    if(jiema < 1023) return 0;
+    int pinjie = ((uf2 << 10) | (uf1 >> 22) | (1 << 30)) & ~(1 << 31);
+    int result = pinjie >> (30 - (jiema - 1023));
+    if(fuhao) return ~result + 1;
+    return result;
 }
 
 /*
@@ -173,5 +255,9 @@ int float64_f2i(unsigned uf1, unsigned uf2) {
  *   Difficulty: 4
  */
 unsigned floatPower2(int x) {
-    return 2;
+    if(x >= 128) return ((1 << 8) - 1) << 23;
+    if(x <= -150) return 0;
+    int jiema = 127 + x;
+    if(jiema <= 0) return (1 << 23) >> (-jiema + 1);
+    return jiema << 23;
 }
